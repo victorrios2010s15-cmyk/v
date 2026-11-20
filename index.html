@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galaxia de Tesis para Victoria 🌸✨</title>
+    <!-- Three.js y OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #090206;
+            color: #fff;
+        }
+
+        #webgl-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #etiquetas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        /* Pantalla de bienvenida */
+        #bienvenida {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #2a0c22 0%, #090206 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 1.2s ease, transform 1.2s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #bienvenida.ocultar {
+            opacity: 0;
+            transform: scale(1.3);
+            pointer-events: none;
+        }
+
+        #bienvenida h1 {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            background: linear-gradient(45deg, #ff758c, #ff7eb3, #da70d6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255, 117, 140, 0.4);
+        }
+
+        #bienvenida p {
+            color: #f3e8ff;
+            margin-bottom: 35px;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-entrar {
+            padding: 16px 38px;
+            background: linear-gradient(135deg, #ff758c, #ff7eb3);
+            border: none;
+            border-radius: 35px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.15rem;
+            cursor: pointer;
+            box-shadow: 0 0 25px rgba(255, 117, 140, 0.6);
+            transition: transform 0.3s ease;
+        }
+
+        .btn-entrar:hover {
+            transform: scale(1.08);
+        }
+
+        /* Estilo responsivo mejorado para que los mensajes no se salgan de la pantalla */
+        .etiqueta-3d {
+            position: absolute;
+            background: rgba(25, 10, 32, 0.9);
+            border: 1px solid rgba(255, 117, 140, 0.6);
+            color: #ffb6c1;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            backdrop-filter: blur(6px);
+            box-shadow: 0 0 12px rgba(255, 117, 140, 0.3);
+            white-space: nowrap;
+            user-select: none;
+            pointer-events: auto;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            max-width: 80vw;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+
+        .etiqueta-3d:hover {
+            background: #ff758c;
+            color: #fff;
+            transform: translate(-50%, -50%) scale(1.08);
+        }
+
+        .icono-flotante {
+            position: absolute;
+            font-size: 22px;
+            user-select: none;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            filter: drop-shadow(0 0 8px rgba(255, 117, 140, 0.6));
+        }
+
+        /* Modal responsivo y centrado */
+        #modal-mensaje {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(22, 10, 30, 0.96);
+            border: 1px solid rgba(255, 117, 140, 0.6);
+            border-radius: 20px;
+            padding: 25px 20px;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(255, 117, 140, 0.5);
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(12px);
+        }
+
+        #modal-mensaje.activo {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        #modal-mensaje h2 {
+            color: #ff7eb3;
+            margin-bottom: 12px;
+            font-size: 20px;
+        }
+
+        #modal-mensaje p {
+            color: #f3e8ff;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .btn-cerrar {
+            padding: 10px 24px;
+            background: transparent;
+            border: 2px solid #ff758c;
+            color: #ff758c;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cerrar:hover {
+            background: #ff758c;
+            color: #fff;
+        }
+
+        .instruccion-footer {
+            position: absolute;
+            bottom: 15px;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            z-index: 5;
+            pointer-events: none;
+            padding: 0 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="bienvenida">
+        <h1>Una Galaxia para tu Tesis 🌸✨</h1>
+        <p>¡Victoria, sé que lo vas a lograr con mucho éxito!</p>
+        <button class="btn-entrar" onclick="iniciarExperiencia()">ENTRAR AL UNIVERSO ROSA 🚀</button>
+    </div>
+
+    <div id="etiquetas-container"></div>
+
+    <div id="modal-mensaje">
+        <h2 id="modal-titulo">Título</h2>
+        <p id="modal-texto">Detalle del mensaje.</p>
+        <button class="btn-cerrar" onclick="cerrarModal()">CONTINUAR 💖</button>
+    </div>
+
+    <div class="instruccion-footer">Haz clic en cualquier mensaje flotante del universo para leer más 💫</div>
+
+    <div id="webgl-container"></div>
+
+    <script>
+        let scene, camera, renderer, controls, galaxyParticles, ramoFloresGigante;
+        let mensajesData = [];
+        let elementosDOM = [];
+        let iconosData = [];
+        let iconosDOM = [];
+        let animandoEntrada = false;
+        let tiempoEntrada = 0;
+        let anguloCamaraInicio = 0;
+
+        function init3D() {
+            const container = document.getElementById('webgl-container');
+            const etiquetasContainer = document.getElementById('etiquetas-container');
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 350, 480);
+
+            renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
+            controls.enabled = false;
+
+            crearGalaxiaOptimizada();
+            crearRamoDeFloresEsferico(); // Ramo rediseñado con forma perfecta y tridimensional
+
+            mensajesData = [
+                { corto: "💡 ¡Tú puedes con esto!", titulo: "¡Confía en tu capacidad, Victoria! 💡", detalle: "Sé que a veces la presión de la tesis pesa, pero recuerda todo lo que has investigado y aprendido. Tienes una mente brillante y saldrás victoriosa.", pos: new THREE.Vector3(14, 3, 10) },
+                { corto: "🎓 ¡A triunfar en tu tesis!", titulo: "¡La meta está a la vuelta de la esquina! 🎓", detalle: "Este es el paso final de una etapa muy importante. Visualízate culminando con éxito y defendiendo con seguridad tu proyecto.", pos: new THREE.Vector3(-15, 4, -11) },
+                { corto: "✨ Confía en tu gran talento", titulo: "Tu talento no tiene límites ✨", detalle: "Cada argumento, cada capítulo y cada esfuerzo que pusiste llevan tu sello personal. Confía en lo que escribiste y demuéstralo.", pos: new THREE.Vector3(8, -3, -16) },
+                { corto: "🚀 Ya falta el último empujón", titulo: "¡El último tramo del cohete! 🚀", detalle: "Ya pasaste lo más difícil y pesado de la investigación. Este último esfuerzo definirá un logro inolvidable en tu vida profesional.", pos: new THREE.Vector3(-11, -4, 14) },
+                { corto: "🧠 Tu esfuerzo valdrá la pena", titulo: "Esfuerzo con recompensa asegurada 🧠", detalle: "Las desveladas y horas de dedicación se convertirán en orgullo puro cuando veas tu tesis aprobada y terminada con excelencia.", pos: new THREE.Vector3(18, 2, -5) },
+                { corto: "🎉 ¡Pronto a celebrar!", titulo: "¡Prepara la celebración! 🎉", detalle: "Falta poco para quitarse este peso de encima y festejar como se debe. ¡Vas a arrasar con esa presentación!", pos: new THREE.Vector3(-6, 5, 17) },
+                { corto: "📚 Eres súper brillante", titulo: "Brillo propio y dedicación 📚", detalle: "Tienes las herramientas, la inteligencia y la disciplina para sacar adelante este reto de forma sobresaliente.", pos: new THREE.Vector3(5, 8, -12) },
+                { corto: "💪 ¡No te rindas ahora!", titulo: "¡Resiste y vence, Victoria! 💪", detalle: "Estás más cerca que nunca de la meta final. Respira profundo, tómate un respiro si lo necesitas, pero nunca dudes de ti.", pos: new THREE.Vector3(-17, -2, 6) }
+            ];
+
+            mensajesData.forEach((item) => {
+                const div = document.createElement('div');
+                div.className = 'etiqueta-3d';
+                div.textContent = item.corto;
+                div.addEventListener('click', () => abrirModal(item.titulo, item.detalle));
+                etiquetasContainer.appendChild(div);
+                elementosDOM.push(div);
+            });
+
+            iconosData = [
+                { emoji: "🌸", pos: new THREE.Vector3(-10, 6, 4) },
+                { emoji: "⭐", pos: new THREE.Vector3(11, -5, -8) },
+                { emoji: "💖", pos: new THREE.Vector3(-4, -5, 11) },
+                { emoji: "✨", pos: new THREE.Vector3(9, 5, -12) },
+                { emoji: "📚", pos: new THREE.Vector3(-12, -2, -6) },
+                { emoji: "🎓", pos: new THREE.Vector3(3, -7, 9) },
+                { emoji: "🚀", pos: new THREE.Vector3(15, -1, 3) },
+                { emoji: "💎", pos: new THREE.Vector3(-8, 8, -4) }
+            ];
+
+            iconosData.forEach((item) => {
+                const span = document.createElement('span');
+                span.className = 'icono-flotante';
+                span.textContent = item.emoji;
+                etiquetasContainer.appendChild(span);
+                iconosDOM.push({ el: span, pos: item.pos });
+            });
+
+            animate();
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function crearGalaxiaOptimizada() {
+            const numParticles = 12000;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(numParticles * 3);
+            const colors = new Float32Array(numParticles * 3);
+
+            const colorRosaClaro = new THREE.Color('#ff7eb3');
+            const colorFucsia = new THREE.Color('#ff2a85');
+            const colorMagenta = new THREE.Color('#da70d6');
+            const colorBlanco = new THREE.Color('#ffffff');
+
+            for (let i = 0; i < numParticles; i++) {
+                const r = Math.random() * 45;
+                const theta = Math.random() * Math.PI * 2 * 5; 
+                const armOffset = (i % 3) * ((Math.PI * 2) / 3);
+
+                const x = r * Math.cos(theta + armOffset) + (Math.random() - 0.5) * 2.0;
+                const y = (Math.random() - 0.5) * (32 - r) * 0.35;
+                const z = r * Math.sin(theta + armOffset) + (Math.random() - 0.5) * 2.0;
+
+                positions[i * 3] = x;
+                positions[i * 3 + 1] = y;
+                positions[i * 3 + 2] = z;
+
+                const mixedColor = colorRosaClaro.clone();
+                mixedColor.lerp(colorFucsia, r / 45);
+                if (Math.random() > 0.75) mixedColor.lerp(colorMagenta, 0.5);
+                if (Math.random() > 0.9) mixedColor.lerp(colorBlanco, 0.8);
+
+                colors[i * 3] = mixedColor.r;
+                colors[i * 3 + 1] = mixedColor.g;
+                colors[i * 3 + 2] = mixedColor.b;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.18,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.9,
+                blending: THREE.AdditiveBlending
+            });
+
+            galaxyParticles = new THREE.Points(geometry, material);
+            scene.add(galaxyParticles);
+        }
+
+        // Ramo rediseñado con forma esférica natural y tridimensional perfecta
+        function crearRamoDeFloresEsferico() {
+            ramoFloresGigante = new THREE.Group();
+            
+            // Base del cono del ramo (envoltorio estético inferior)
+            const geomCono = new THREE.ConeGeometry(1.5, 3.0, 12);
+            const matCono = new THREE.MeshBasicMaterial({ color: 0xff4da6, wireframe: false });
+            const envoltorio = new THREE.Mesh(geomCono, matCono);
+            envoltorio.position.y = -1.5;
+            envoltorio.rotation.x = Math.PI;
+            ramoFloresGigante.add(envoltorio);
+
+            // Flores distribuidas en forma de cúpula/esfera compacta sobre el envoltorio
+            const coloresPetalos = [0xff1493, 0xff69b4, 0xffb6c1, 0xda70d6, 0xff1af0];
+            const cantidadFlores = 12;
+
+            for (let i = 0; i < cantidadFlores; i++) {
+                const phi = Math.acos(-1 + (2 * i) / cantidadFlores) * 0.5; // Distribución superior esférica
+                const theta = Math.sqrt(cantidadFlores * Math.PI) * phi;
+
+                const x = 1.8 * Math.cos(theta) * Math.sin(phi);
+                const y = 1.2 + (1.2 * Math.cos(phi));
+                const z = 1.8 * Math.sin(theta) * Math.sin(phi);
+
+                const colorFlor = coloresPetalos[i % coloresPetalos.length];
+                const florGrupo = crearFlorEsferica(colorFlor, 1.4);
+                florGrupo.position.set(x, y, z);
+                
+                // Orientar cada flor hacia afuera para que luzca natural en 3D
+                florGrupo.lookAt(x * 2, y + 1, z * 2);
+                ramoFloresGigante.add(florGrupo);
+            }
+
+            // Flor central principal grande
+            const florCentral = crearFlorEsferica(0xff007f, 2.2);
+            florCentral.position.set(0, 2.2, 0);
+            ramoFloresGigante.add(florCentral);
+
+            scene.add(ramoFloresGigante);
+        }
+
+        function crearFlorEsferica(colorHex, escala = 1.0) {
+            const grupo = new THREE.Group();
+            
+            // Centro dorado
+            const centro = new THREE.Mesh(
+                new THREE.SphereGeometry(0.35 * escala, 10, 10),
+                new THREE.MeshBasicMaterial({ color: 0xffd700 })
+            );
+            grupo.add(centro);
+
+            // Pétalos tridimensionales alrededor
+            const numPetalos = 10;
+            const matPetalo = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.95 });
+            
+            for (let p = 0; p < numPetalos; p++) {
+                const petaloMesh = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.35 * escala, 8, 8),
+                    matPetalo
+                );
+                petaloMesh.scale.set(0.6, 1.4, 0.4);
+                
+                const angulo = (p / numPetalos) * Math.PI * 2;
+                petaloMesh.position.x = Math.cos(angulo) * 0.5 * escala;
+                petaloMesh.position.z = Math.sin(angulo) * 0.5 * escala;
+                petaloMesh.rotation.y = -angulo;
+                petaloMesh.rotation.x = 0.4;
+                
+                grupo.add(petaloMesh);
+            }
+            return grupo;
+        }
+
+        function actualizarElementos3D() {
+            const widthHalf = window.innerWidth / 2;
+            const heightHalf = window.innerHeight / 2;
+
+            // Restricción de coordenadas para asegurar responsividad absoluta dentro de la pantalla
+            const margenX = 60;
+            const margenY = 50;
+
+            mensajesData.forEach((item, index) => {
+                let vectorPos = item.pos.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), galaxyParticles.rotation.y).project(camera);
+                if (vectorPos.z < 1) {
+                    let x = (vectorPos.x * widthHalf) + widthHalf;
+                    let y = -(vectorPos.y * heightHalf) + heightHalf;
+
+                    // Limitar dentro del viewport visible para evitar que se salgan
+                    x = Math.max(margenX, Math.min(window.innerWidth - margenX, x));
+                    y = Math.max(margenY, Math.min(window.innerHeight - margenY, y));
+
+                    elementosDOM[index].style.left = `${x}px`;
+                    elementosDOM[index].style.top = `${y}px`;
+                    elementosDOM[index].style.opacity = '1';
+                    elementosDOM[index].style.pointerEvents = 'auto';
+                } else {
+                    elementosDOM[index].style.opacity = '0.15';
+                    elementosDOM[index].style.pointerEvents = 'none';
+                }
+            });
+
+            iconosDOM.forEach((item) => {
+                let vectorPos = item.pos.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), galaxyParticles.rotation.y).project(camera);
+                if (vectorPos.z < 1) {
+                    let x = (vectorPos.x * widthHalf) + widthHalf;
+                    let y = -(vectorPos.y * heightHalf) + heightHalf;
+
+                    x = Math.max(30, Math.min(window.innerWidth - 30, x));
+                    y = Math.max(30, Math.min(window.innerHeight - 30, y));
+
+                    item.el.style.left = `${x}px`;
+                    item.el.style.top = `${y}px`;
+                    item.el.style.opacity = '1';
+                } else {
+                    item.el.style.opacity = '0.2';
+                }
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (animandoEntrada) {
+                tiempoEntrada += 0.03;
+                anguloCamaraInicio += 0.04;
+                const radioActual = 480 * (1 - tiempoEntrada) + 30 * tiempoEntrada;
+                const alturaActual = 350 * (1 - tiempoEntrada) + 15 * tiempoEntrada;
+
+                camera.position.x = Math.cos(anguloCamaraInicio) * radioActual;
+                camera.position.z = Math.sin(anguloCamaraInicio) * radioActual;
+                camera.position.y = alturaActual;
+                camera.lookAt(0, 0, 0);
+
+                if (tiempoEntrada >= 1.0) {
+                    animandoEntrada = false;
+                    camera.position.set(0, 15, 30);
+                    controls.enabled = true;
+                }
+            }
+
+            if (galaxyParticles) {
+                galaxyParticles.rotation.y += 0.001;
+                actualizarElementos3D();
+            }
+
+            if (ramoFloresGigante) {
+                ramoFloresGigante.rotation.y += 0.0025;
+            }
+
+            if (!animandoEntrada) {
+                controls.update();
+            }
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function iniciarExperiencia() {
+            document.getElementById('bienvenida').classList.add('ocultar');
+            if (!scene) init3D();
+            animandoEntrada = true;
+            tiempoEntrada = 0;
+            anguloCamaraInicio = 0;
+        }
+
+        function abrirModal(titulo, detalle) {
+            document.getElementById('modal-titulo').textContent = titulo;
+            document.getElementById('modal-texto').textContent = detalle;
+            document.getElementById('modal-mensaje').classList.add('activo');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-mensaje').classList.remove('activo');
+        }
+    </script>
+</body>
+</html>
